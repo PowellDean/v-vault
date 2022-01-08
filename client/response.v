@@ -1,7 +1,7 @@
 module client
 
 struct Error_response {
-	errors []string [required]
+	pub: errors []string [required]
 }
 
 struct Init_response {
@@ -9,14 +9,15 @@ struct Init_response {
 }
 
 struct Key_status_response {
+    pub:
     term int
     install_time string
     encryptions int
     lease_id string
     renewable bool
-    pub mut:
-    error_messages []string [skip]
 }
+
+type Key_status_or_error = Key_status_response | Error_response
 
 struct Policies_response {
     policies []string
@@ -25,6 +26,14 @@ struct Policies_response {
     renewable bool
     pub mut:
     error_messages []string [skip]
+}
+
+struct Secret {
+    request_id string
+    lease_id string
+    renewable bool
+    lease_duration int
+    data map[string]string
 }
 
 struct Status_response {
