@@ -43,10 +43,21 @@ fn main() {
 }
 
 fn t1() ?{
-    x := client.new_client('', 's.3MPz4w4tr21uCvQPPi5v4Yhx')
+    x := client.new_client('', 's.zRQGrnL3sFZid3EGjT6qA2Z5')
     //println(x)
-    println(x.is_initialized())
-    println(x.get_secret('cubbyhole/foo')?)
-    println(x.get_secret('secret/a')?)
-    println(x.is_sealed())
+    //println(x.is_initialized())
+    println(x.get_secret_v1('cubbyhole', 'foo')?)
+    z := x.get_secret_v2('secret', 'bar') or {
+        println(err)
+        client.Secret_v2{}
+    }
+    println(z)
+    //println(x.is_sealed())
+    j := x.list_secrets('cubbyhole') or {
+        println(err)
+        client.Key_list_response{}
+    }
+    println(j)
+
+    x.put_secret_v1('cubbyhole', 'blah', 'newkey', 'newvalue')
 }

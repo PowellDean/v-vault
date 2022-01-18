@@ -51,15 +51,16 @@ pub fn (c Client) get_encryption_key_status() ?Key_status_or_error {
     }
 }
 
-// get_secret will return the value of the requested secret, or it
-// will return an Error_response if the requested key cannot be
-// retrieved.
-pub fn (c Client) get_secret(key string) ?string {
+// get_secret will return the value of the requested secret
+// Returns an Optional
+pub fn (c Client) get_secret_v1(mountpoint string, key string) ?Secret_v1 {
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
         panic('Cannot create request header')
     }
-    url := c.to_string() + '/v1/$key'
+
+    mut url := c.to_string() + '/v1/$mountpoint/$key'
+    println(url)
 
     mut req := http.Request{
         method: .get,
@@ -73,15 +74,79 @@ pub fn (c Client) get_secret(key string) ?string {
 
     match response.status() {
         .ok {
-            res := json.decode(Secret, response.text) or {
+            res := json.decode(Secret_v1, response.text) or {
                 panic(err)
             }
-            index := res.data.keys()[0]
-            return res.data[index]
-            //return res
+            return res
         }
         .not_found {
             return(error('Secret $key not found'))
+        }
+        else {
+            return error(response.text)
+        }
+    }
+}
+pub fn (c Client) get_secret_v2(mountpoint string, key string) ?Secret_v2 {
+    mut header := http.new_header()
+    header.add_custom('X-Vault-Token', c.token) or {
+        panic('Cannot create request header')
+    }
+
+    mut url := c.to_string() + '/v1/$mountpoint/data/$key'
+
+    mut req := http.Request{
+        method: .get,
+        header: header,
+        url: url
+    }
+
+    response := req.do() or {
+        panic(err)
+    }
+
+    match response.status() {
+        .ok {
+            res := json.decode(Secret_v2, response.text) or {
+                panic(err)
+            }
+            //index := res.data.keys()[0]
+            //return res.data[index]
+            return res
+        }
+        .not_found {
+            return(error('Secret $key not found'))
+        }
+        else {
+            return error(response.text)
+        }
+    }
+}
+
+pub fn (c Client) list_secrets(mountpoint string) ?Key_list_response {
+    mut header := http.new_header()
+    header.add_custom('X-Vault-Token', c.token) or {
+        panic('Cannot create request header')
+    }
+
+    url := c.to_string() + '/v1/$mountpoint?list=true'
+
+    mut req := http.Request{
+        method: .get,
+        header: header,
+        url: url
+    }
+
+    response := req.do() or {
+        panic(err)
+    }
+
+    match response.status() {
+        .ok {
+            res := json.decode(Key_list_response, response.text) or {
+                panic(err)
+            }
+            return res
         }
         else {
             return error(response.text)
@@ -196,6 +261,45 @@ pub fn (c Client) is_sealed() bool {
         }
         else {
             panic(response.text)
+        }
+    }
+}
+
+pub fn (c Client) put_secret_v1(
+            mountpoint string,
+            key string,
+            new_key string,
+            new_value string) {
+
+    mut header := http.new_header()
+    header.add_custom('X-Vault-Token', c.token) or {
+        panic('Cannot create request header')
+    }
+
+    url := c.to_string() + '/v1/$mountpoint/$key'
+    data := '{"$new_key": "$new_value"}'
+    println(url)
+
+    mut req := http.Request{
+        method: .post,
+        header: header,
+        data: data,
+        url: url
+    }
+
+    response := req.do() or {
+        panic(err)
+    }
+
+    match response.status() {
+        .no_content {
+            println('Put operation successful')
+        }
+        .bad_request {
+            println('Bad Request!')
+        }
+        else {
+            println(response.status())
         }
     }
 }

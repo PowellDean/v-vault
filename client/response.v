@@ -8,6 +8,19 @@ struct Init_response {
     initialized bool [required]
 }
 
+struct Key_list {
+    keys []string
+}
+
+pub struct Key_list_response {
+    request_id string
+    lease_id   string
+    renewable  bool
+    data       Key_list
+}
+
+type Key_list_or_error = Key_list_response | Error_response
+
 struct Key_status_response {
     pub:
     term int
@@ -28,12 +41,32 @@ struct Policies_response {
     error_messages []string [skip]
 }
 
-struct Secret {
+pub struct Secret_v1 {
     request_id string
     lease_id string
     renewable bool
     lease_duration int
     data map[string]string
+}
+
+pub struct Secret_v2_metadata {
+    created_time string
+    deletion_time string
+    destroyed bool
+    version int
+}
+
+struct Secret_v2_data {
+    data map[string]string
+    metadata Secret_v2_metadata
+}
+
+pub struct Secret_v2 {
+    request_id string
+    lease_id string
+    renewable bool
+    lease_duration int
+    data Secret_v2_data
 }
 
 struct Status_response {
