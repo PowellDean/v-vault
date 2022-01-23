@@ -43,8 +43,9 @@ fn main() {
 }
 
 fn t1() ?{
-    x := client.new_client('', 's.zRQGrnL3sFZid3EGjT6qA2Z5')
-    //println(x)
+    x := client.new_client('', client.Authtype.token, 's.XFYYGwwWOQscUT2WsR1KWt0Y')
+    //x := client.new_client('', client.Authtype.username, 'dpowell', 'dpowell')
+    println(x)
     //println(x.is_initialized())
     println(x.get_secret_v1('cubbyhole', 'foo')?)
     z := x.get_secret_v2('secret', 'bar') or {

@@ -86,3 +86,15 @@ struct Status_response {
     pub mut:
     error_messages []string [skip]
 }
+
+struct User_auth {
+    client_token string
+}
+
+struct User_login_response {
+    request_id string
+    lease_id string
+    renewable bool
+    lease_duration int
+    auth User_auth
+}

@@ -11,6 +11,7 @@ pub:
     scheme  string
     host    string
     port    string
+    mut:
     token   string
 }
 
@@ -191,11 +192,42 @@ pub fn (c Client) list_policies() ?Policies_response {
     return wanted_response
 }
 
-// new_client creates a fully initialized Vault Client structure. It optionally
-// accepts a string argument as the address of the Vault server. If no argument
-// is given, look to see if $VAULT_ADDR has been set and initialize from that.
-// If neither is specified, use the default Vault address http://127.0.0.1:8200
-pub fn new_client(address string, token string) Client {
+// new_client is the control function for creating a new connection to a Vault
+// server. It accepts a vault address in the form 'http://<ipv4_addres:port>'
+// (may also be blank -- see new_client_via_token for details),
+// and an Authentication type (either .token or .username). If Authtype is
+// .token, the next argument must be the Vault token. If Authtype is .username,
+// both a username and password must be passed in, in that order.
+pub fn new_client(address string, method Authtype, kwargs ...string) Client {
+    match method {
+        .token {
+            match kwargs.len {
+                0 { panic('Pass in a required token') }
+                1 { return new_client_via_token(address, kwargs[0]) }
+                else { panic('You passed too many arguments. Just pass 1 token') }
+            }
+            if kwargs.len < 1 {
+                panic('pass in a required token')
+            }
+            return new_client_via_token(address, kwargs[0])
+        }
+        .username {
+            match kwargs.len {
+                0 { panic('Pass in both a username and password') }
+                1 { panic('Need to pass a password, not just a username') }
+                2 { return new_client_via_login(address, kwargs[0], kwargs[1]) }
+                else { panic('You passed to many arguments. Not sure which is which') }
+            }
+        }
+    }
+}
+
+// new_client_via_token creates a fully initialized Vault Client structure.
+// It optionally accepts a string argument as the address of the Vault server.
+// If no argument is given, look to see if $VAULT_ADDR has been set and
+// initialize from that. If neither is specified, use the default Vault address
+// http://127.0.0.1:8200
+pub fn new_client_via_token(address string, token string) Client {
     mut scheme := ''
     mut host := ''
     mut port := ''
@@ -232,6 +264,36 @@ pub fn new_client(address string, token string) Client {
 
     client := Client{scheme: scheme, host: host, port: port, token: token}
     return client
+}
+
+pub fn new_client_via_login(address string, uname string, pswd string) Client {
+    mut a_client := new_client_via_token(address, '')
+
+    url := a_client.to_string() + '/v1/auth/userpass/login/$uname'
+    data := '{"password": "$pswd"}'
+
+    mut req := http.Request{
+        method: .post,
+        data: data,
+        url: url
+    }
+
+    response := req.do() or {
+        panic(err)
+    }
+
+    match response.status() {
+        .ok {
+            wanted_response := json.decode(User_login_response, response.text)
+            or {
+                panic(err)
+            }
+            a_client.token = wanted_response.auth.client_token
+        } else {
+            panic(response.text)
+        }
+    }
+    return a_client
 }
 
 pub fn (c Client) is_initialized() bool {
