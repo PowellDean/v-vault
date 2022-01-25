@@ -1,4 +1,4 @@
-module client
+module vault
 
 pub enum Authtype {
     token

@@ -1,9 +1,9 @@
 module main
-import client
+import vault
 
 fn main() {
     /*
-    x := client.new_client('', 's.lTcfCOKmGqgvx0XoPwLfA9eA')
+    x := vault.new_client('', 's.lTcfCOKmGqgvx0XoPwLfA9eA')
     println(x)
     println(x.is_initialized())
     mut ans := x.unseal('fhfmZKz4FvPNFdgP/jgBUMz6YOAuutfcVEJnfXed2vPJ')?
@@ -27,10 +27,10 @@ fn main() {
     println(sp.type_name())
     println(sp)
     match sp {
-        client.Key_status_response {
+        vault.Key_status_response {
             println(sp.install_time)
         }
-        client.Error_response { panic(sp.errors[0]) }
+        vault.Error_response { panic(sp.errors[0]) }
     }
     println(x.list_policies()?)
     //x.read_policy('s.lTcfCOKmGqgvx0XoPwLfA9eA', 'my-policy')
@@ -43,22 +43,24 @@ fn main() {
 }
 
 fn t1() ?{
-    x := client.new_client('', client.Authtype.token, 's.XFYYGwwWOQscUT2WsR1KWt0Y')
-    //x := client.new_client('', client.Authtype.username, 'dpowell', 'dpowell')
-    println(x)
+    x := vault.new_client('', vault.Authtype.token, 's.jYdatwrOlNLslDfSKMjeZHE1')
+    //x := vault.new_client('', vault.Authtype.username, 'dpowell', 'dpowell')
+    //println(x)
     //println(x.is_initialized())
-    println(x.get_secret_v1('cubbyhole', 'foo')?)
-    z := x.get_secret_v2('secret', 'bar') or {
-        println(err)
-        client.Secret_v2{}
-    }
-    println(z)
+    //println(x.get_secret_v1('cubbyhole', 'foo')?)
+    //z := x.get_secret_v2('secret', 'bar') or {
+        //println(err)
+        //vault.Secret_v2{}
+    //}
+    //println(z)
     //println(x.is_sealed())
-    j := x.list_secrets('cubbyhole') or {
-        println(err)
-        client.Key_list_response{}
-    }
-    println(j)
+    //j := x.list_secrets('cubbyhole') or {
+        //println(err)
+        //vault.Key_list_response{}
+    //}
+    //println(j)
 
-    x.put_secret_v1('cubbyhole', 'blah', 'newkey', 'newvalue')
+    //x.put_secret_v2('secret', 'blah', 'newkey', 'newvalue')
+    //x.read_policy('default')
+    x.get_system_health()
 }

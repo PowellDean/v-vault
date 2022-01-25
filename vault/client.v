@@ -1,4 +1,4 @@
-module client
+module vault
 
 import json
 import net.http
@@ -124,6 +124,49 @@ pub fn (c Client) get_secret_v2(mountpoint string, key string) ?Secret_v2 {
     }
 }
 
+pub fn (c Client) get_system_health() ?Health_response {
+    mut header := http.new_header()
+    header.add_custom('X-Vault-Token', c.token) or {
+        panic('Cannot create request header')
+    }
+
+    mut url := c.to_string() + '/v1/sys/health'
+
+    mut req := http.Request{
+        method: .get,
+        header: header,
+        url: url
+    }
+
+    response := req.do() or {
+        panic(err)
+    }
+
+    match response.status() {
+        .ok {
+            res := json.decode(Health_response, response.text) or {
+                panic(err)
+            }
+            return res
+        }
+        .service_unavailable {
+            res := json.decode(Health_response, response.text) or {
+                panic(err)
+            }
+            return res
+        }
+        .not_implemented {
+            res := json.decode(Health_response, response.text) or {
+                panic(err)
+            }
+            return res
+        }
+        else {
+            return error(response.text)
+        }
+    }
+}
+
 pub fn (c Client) list_secrets(mountpoint string) ?Key_list_response {
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
@@ -227,7 +270,7 @@ pub fn new_client(address string, method Authtype, kwargs ...string) Client {
 // If no argument is given, look to see if $VAULT_ADDR has been set and
 // initialize from that. If neither is specified, use the default Vault address
 // http://127.0.0.1:8200
-pub fn new_client_via_token(address string, token string) Client {
+fn new_client_via_token(address string, token string) Client {
     mut scheme := ''
     mut host := ''
     mut port := ''
@@ -266,7 +309,7 @@ pub fn new_client_via_token(address string, token string) Client {
     return client
 }
 
-pub fn new_client_via_login(address string, uname string, pswd string) Client {
+fn new_client_via_login(address string, uname string, pswd string) Client {
     mut a_client := new_client_via_token(address, '')
 
     url := a_client.to_string() + '/v1/auth/userpass/login/$uname'
@@ -366,11 +409,50 @@ pub fn (c Client) put_secret_v1(
     }
 }
 
-pub fn (c Client) read_policy(token string, name string) {
+pub fn (c Client) put_secret_v2(
+            mountpoint string,
+            key string,
+            new_key string,
+            new_value string) {
+
+    mut header := http.new_header()
+    header.add_custom('X-Vault-Token', c.token) or {
+        panic('Cannot create request header')
+    }
+
+    url := c.to_string() + '/v1/$mountpoint/data/$key'
+    data := '{"$new_key": "$new_value"}'
+    println(url)
+
+    mut req := http.Request{
+        method: .post,
+        header: header,
+        data: data,
+        url: url
+    }
+
+    response := req.do() or {
+        panic(err)
+    }
+
+    match response.status() {
+        .no_content {
+            println('Put operation successful')
+        }
+        .bad_request {
+            println('Bad Request!')
+        }
+        else {
+            println(response.status())
+        }
+    }
+}
+
+pub fn (c Client) read_policy(name string) {
     mut wanted_response := Policies_response{}
 
     mut header := http.new_header()
-    header.add_custom('X-Vault-Token', token) or {
+    header.add_custom('X-Vault-Token', c.token) or {
         panic('Cannot create request header')
     }
 

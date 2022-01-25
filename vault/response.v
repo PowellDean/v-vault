@@ -1,7 +1,20 @@
-module client
+module vault
 
 struct Error_response {
 	pub: errors []string [required]
+}
+
+struct Health_response {
+    initialized bool
+    sealed bool
+    standby bool
+    performance_standby bool
+    replication_performance_mode string
+    replication_dr_mode string
+    server_time_utc int
+    version string
+    cluster_name string
+    cluster_id string
 }
 
 struct Init_response {
