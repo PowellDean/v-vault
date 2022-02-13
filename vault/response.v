@@ -45,6 +45,10 @@ struct Key_status_response {
 
 type Key_status_or_error = Key_status_response | Error_response
 
+struct Mountpoints {
+    mountpoint map[string]string
+}
+
 struct Policies_response {
     policies []string
     keys []string
@@ -70,6 +74,30 @@ struct Status_response {
 	storage_type string
     pub mut:
     error_messages []string [skip]
+}
+
+struct Token_lookup_data {
+    accessor string
+    creation_time int
+    creation_ttl int
+    display_name string
+    entity_id string
+    explicit_max_ttl int
+    id string
+    num_uses int
+    orphan bool
+    path string
+    policies []string
+    ttl int
+    @type string
+}
+
+struct Token_lookup_response {
+    request_id string
+    lease_id string
+    renewable bool
+    lease_duration int
+    data Token_lookup_data
 }
 
 struct User_auth {

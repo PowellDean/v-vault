@@ -185,11 +185,13 @@ pub fn (c Client) list_secrets(mountpoint string) ?Key_list_response {
         panic(err)
     }
 
+    println(response.text)
     match response.status() {
         .ok {
             res := json.decode(Key_list_response, response.text) or {
                 panic(err)
             }
+            println(res)
             return res
         }
         else {
@@ -484,6 +486,49 @@ pub fn (c Client) read_policy(name string) {
         }
     }
     //return wanted_response
+}
+
+pub fn (c Client) token() string {
+    return c.token
+}
+
+pub fn (c Client) token_lookup(tkn string) ?Token_lookup_response {
+    mut header := http.new_header()
+    header.add_custom('X-Vault-Token', tkn) or {
+        panic('Cannot create request header')
+    }
+    header.add_custom('accept', '*/*') or {
+        panic('Cannot create request header')
+    }
+
+    url := c.to_string() + '/v1/auth/token/lookup'
+
+    mut req := http.Request{
+        method: .get,
+        header: header,
+        url: url
+    }
+
+    response := req.do() or {
+        panic(err)
+    }
+
+    println(response.text)
+
+    match response.status() {
+        .ok {
+            res := json.decode(Token_lookup_response, response.text) or {
+                panic(err)
+            }
+            return res
+        }
+        .not_found {
+            return(error('Nope'))
+        }
+        else {
+            return error(response.text)
+        }
+    }
 }
 
 pub fn (c Client) to_string() string {

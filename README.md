@@ -55,10 +55,10 @@ your username and password:
 
 ```v
 module main
-import client
+import vault
 
 fn main() {
-    cl := client.new_client('', client.Authtype.username, 'username', 'password')
+    cl := vault.new_client('', vault.Authtype.username, 'username', 'password')
     println(cl)
 }
 ```
@@ -71,7 +71,7 @@ a version 1 secret:
 ```v
     s_v1 := cl.get_secret_v1('cubbyhole', 'foo') or {
         println(err)
-        client.Secret_v1{}
+        vault.Secret_v1{}
     }
     println(s_v1)
 ```

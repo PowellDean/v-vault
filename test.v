@@ -43,25 +43,25 @@ fn main() {
 }
 
 fn t1() ?{
-    x := vault.new_client('', vault.Authtype.token, 's.zLMltxmBnEUcurXg0MOxYAYY')
+    x := vault.new_client('', vault.Authtype.token, 's.8biw95wvETlpOCzVw8MNqqV5')
     //x := vault.new_client('', vault.Authtype.username, 'dpowell', 'dpowell')
     //println(x)
     //println(x.is_initialized())
     //println(x.get_secret_v1('cubbyhole', 'foo')?)
-    y := x.get_secret_v1('cubbyhole', 'foo') or {
-        println(err)
-        vault.Secret_v1{}
-    }
-    println(y)
-    y.print_data()
-    println(y.key())
-    println(y.value())
-    z := x.get_secret_v2('secret', 'foo') or {
-        println(err)
-        vault.Secret_v2{}
-    }
-    println(z)
-    println(z.value())
+    //y := x.get_secret_v1('cubbyhole', 'foo') or {
+    //    println(err)
+    //    vault.Secret_v1{}
+    //}
+    //println(y)
+    //y.print_data()
+    //println(y.key())
+    //println(y.value())
+    //z := x.get_secret_v2('secret', 'foo') or {
+    //    println(err)
+    //    vault.Secret_v2{}
+    //}
+    //println(z)
+    //println(z.value())
     //println(x.is_sealed())
     //j := x.list_secrets('cubbyhole') or {
         //println(err)
@@ -71,5 +71,9 @@ fn t1() ?{
 
     //x.put_secret_v2('secret', 'blah', 'newkey', 'newvalue')
     //x.read_policy('default')
-    x.get_system_health() or { panic(err) }
+    //x.get_system_health() or { panic(err) }
+    //g := x.token_lookup(x.token())?
+    //println(g)
+    x.list_secrets('cubbyhole')?
+    //println(g)
 }
