@@ -43,7 +43,7 @@ fn main() {
 }
 
 fn t1() ?{
-    x := vault.new_client('', vault.Authtype.token, 's.8biw95wvETlpOCzVw8MNqqV5')
+    x := vault.new_client('', vault.Authtype.token, 's.g8HzkNuXCib12M7jiYKmzZ2w')
     //x := vault.new_client('', vault.Authtype.username, 'dpowell', 'dpowell')
     //println(x)
     //println(x.is_initialized())
@@ -74,6 +74,9 @@ fn t1() ?{
     //x.get_system_health() or { panic(err) }
     //g := x.token_lookup(x.token())?
     //println(g)
-    x.list_secrets('cubbyhole')?
+    //x.list_secrets('cubbyhole')?
     //println(g)
+    //if x.delete_secret_v1('cubbyhole', 'foo') { println('ok') }
+    //if x.delete_secret_v2('secret', 'baz') { println('ok') }
+    if x.undelete_secret_v2('secret', 'baz') { println('ok') }
 }

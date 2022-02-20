@@ -15,6 +15,100 @@ pub:
     token   string
 }
 
+pub fn (c Client) delete_secret_v1(mountpoint string, secret string) bool {
+    mut header := http.new_header()
+    header.add_custom('X-Vault-Token', c.token) or {
+        panic('Cannot create request header')
+    }
+
+    url := c.to_string() + '/v1/$mountpoint/$secret'
+    println(url)
+
+    mut req := http.Request{
+        method: .delete,
+        header: header,
+        url: url
+    }
+
+    response := req.do() or {
+        panic(err)
+    }
+
+    match response.status() {
+        .no_content {
+            return true
+        }
+        else {
+            return false
+        }
+    }
+}
+
+pub fn (c Client) delete_secret_v2(
+            mountpoint string,
+            secret string) bool {
+    mut header := http.new_header()
+    header.add_custom('X-Vault-Token', c.token) or {
+        panic('Cannot create request header')
+    }
+
+    url := c.to_string() + '/v1/$mountpoint/data/$secret'
+    println(url)
+
+    mut req := http.Request{
+        method: .delete,
+        header: header,
+        url: url
+    }
+
+    response := req.do() or {
+        panic(err)
+    }
+
+    match response.status() {
+        .no_content {
+            return true
+        }
+        else {
+            return false
+        }
+    }
+}
+
+pub fn (c Client) destroy_secret_v2(
+            mountpoint string,
+            secret string) bool {
+    mut header := http.new_header()
+    header.add_custom('X-Vault-Token', c.token) or {
+        panic('Cannot create request header')
+    }
+
+    url := c.to_string() + '/v1/$mountpoint/destroy/$secret'
+    data := '{"versions": [1]}'
+    println(url)
+
+    mut req := http.Request{
+        method: .post,
+        header: header,
+        data: data,
+        url: url
+    }
+
+    response := req.do() or {
+        panic(err)
+    }
+
+    println(response)
+    match response.status() {
+        .no_content {
+            return true
+        }
+        else {
+            return false
+        }
+    }
+}
+
 pub fn (c Client) get_encryption_key_status() ?Key_status_or_error {
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
@@ -182,6 +276,13 @@ pub fn (c Client) list_secrets(mountpoint string) ?Key_list_response {
     }
 
     response := req.do() or {
+        match err.msg {
+            'dial_tcp failed' {
+                panic('Vault Server Not Started')
+            } else {
+                panic(err)
+            }
+        }
         panic(err)
     }
 
@@ -533,6 +634,38 @@ pub fn (c Client) token_lookup(tkn string) ?Token_lookup_response {
 
 pub fn (c Client) to_string() string {
     return '$c.scheme://$c.host:$c.port'
+}
+
+pub fn (c Client) undelete_secret_v2(mountpoint string, secret string) bool {
+    mut header := http.new_header()
+    header.add_custom('X-Vault-Token', c.token) or {
+        panic('Cannot create request header')
+    }
+
+    url := c.to_string() + '/v1/$mountpoint/undelete/$secret'
+    data := '{"versions": [2]}'
+    println(url)
+
+    mut req := http.Request{
+        method: .post,
+        header: header,
+        data: data,
+        url: url
+    }
+
+    response := req.do() or {
+        panic(err)
+    }
+
+    println(response)
+    match response.status() {
+        .no_content {
+            return true
+        }
+        else {
+            return false
+        }
+    }
 }
 
 pub fn (c Client) unseal(token string) ?Status_response {
