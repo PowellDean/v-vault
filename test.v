@@ -43,7 +43,7 @@ fn main() {
 }
 
 fn t1() ?{
-    x := vault.new_client('', vault.Authtype.token, 's.g8HzkNuXCib12M7jiYKmzZ2w')
+    x := vault.new_client('', vault.Authtype.token, 's.TGw3d9HJLiouaXAgZJUW6xQl')
     //x := vault.new_client('', vault.Authtype.username, 'dpowell', 'dpowell')
     //println(x)
     //println(x.is_initialized())
@@ -56,7 +56,7 @@ fn t1() ?{
     //y.print_data()
     //println(y.key())
     //println(y.value())
-    //z := x.get_secret_v2('secret', 'foo') or {
+    //z := x.get_secret_v2('secret', 'foo', 0) or {
     //    println(err)
     //    vault.Secret_v2{}
     //}
@@ -78,5 +78,8 @@ fn t1() ?{
     //println(g)
     //if x.delete_secret_v1('cubbyhole', 'foo') { println('ok') }
     //if x.delete_secret_v2('secret', 'baz') { println('ok') }
-    if x.undelete_secret_v2('secret', 'baz') { println('ok') }
+    //if x.delete_secret_v2_versions('secret', 'foo', [4, 5]) { println('ok') }
+    //if x.undelete_secret_v2_versions('secret', 'foo', [2, 4, 5]) { println('ok') }
+    //if x.undelete_secret_v2('secret', 'baz') { println('ok') }
+    if x.destroy_secret_v2_versions('secret', 'foo', [2]) { println('ok') }
 }

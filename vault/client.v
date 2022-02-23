@@ -22,7 +22,6 @@ pub fn (c Client) delete_secret_v1(mountpoint string, secret string) bool {
     }
 
     url := c.to_string() + '/v1/$mountpoint/$secret'
-    println(url)
 
     mut req := http.Request{
         method: .delete,
@@ -53,7 +52,6 @@ pub fn (c Client) delete_secret_v2(
     }
 
     url := c.to_string() + '/v1/$mountpoint/data/$secret'
-    println(url)
 
     mut req := http.Request{
         method: .delete,
@@ -75,17 +73,17 @@ pub fn (c Client) delete_secret_v2(
     }
 }
 
-pub fn (c Client) destroy_secret_v2(
+pub fn (c Client) delete_secret_v2_versions(
             mountpoint string,
-            secret string) bool {
+            secret string,
+            versions []int) bool {
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
         panic('Cannot create request header')
     }
 
-    url := c.to_string() + '/v1/$mountpoint/destroy/$secret'
-    data := '{"versions": [1]}'
-    println(url)
+    data := '{"versions": $versions}'
+    url := c.to_string() + '/v1/$mountpoint/delete/$secret'
 
     mut req := http.Request{
         method: .post,
@@ -98,7 +96,39 @@ pub fn (c Client) destroy_secret_v2(
         panic(err)
     }
 
-    println(response)
+    match response.status() {
+        .no_content {
+            return true
+        }
+        else {
+            return false
+        }
+    }
+}
+
+pub fn (c Client) destroy_secret_v2_versions(
+            mountpoint string,
+            secret string,
+            versions []int) bool {
+    mut header := http.new_header()
+    header.add_custom('X-Vault-Token', c.token) or {
+        panic('Cannot create request header')
+    }
+
+    url := c.to_string() + '/v1/$mountpoint/destroy/$secret'
+    data := '{"versions": $versions}'
+
+    mut req := http.Request{
+        method: .post,
+        header: header,
+        data: data,
+        url: url
+    }
+
+    response := req.do() or {
+        panic(err)
+    }
+
     match response.status() {
         .no_content {
             return true
@@ -155,7 +185,6 @@ pub fn (c Client) get_secret_v1(mountpoint string, key string) ?Secret_v1 {
     }
 
     mut url := c.to_string() + '/v1/$mountpoint/$key'
-    println(url)
 
     mut req := http.Request{
         method: .get,
@@ -182,13 +211,16 @@ pub fn (c Client) get_secret_v1(mountpoint string, key string) ?Secret_v1 {
         }
     }
 }
-pub fn (c Client) get_secret_v2(mountpoint string, key string) ?Secret_v2 {
+pub fn (c Client) get_secret_v2(
+            mountpoint string,
+            key string,
+            ver int) ?Secret_v2 {
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
         panic('Cannot create request header')
     }
 
-    mut url := c.to_string() + '/v1/$mountpoint/data/$key'
+    mut url := c.to_string() + '/v1/$mountpoint/data/$key?version=$ver'
 
     mut req := http.Request{
         method: .get,
@@ -286,13 +318,11 @@ pub fn (c Client) list_secrets(mountpoint string) ?Key_list_response {
         panic(err)
     }
 
-    println(response.text)
     match response.status() {
         .ok {
             res := json.decode(Key_list_response, response.text) or {
                 panic(err)
             }
-            println(res)
             return res
         }
         else {
@@ -486,7 +516,6 @@ pub fn (c Client) put_secret_v1(
 
     url := c.to_string() + '/v1/$mountpoint/$key'
     data := '{"$new_key": "$new_value"}'
-    println(url)
 
     mut req := http.Request{
         method: .post,
@@ -525,7 +554,6 @@ pub fn (c Client) put_secret_v2(
 
     url := c.to_string() + '/v1/$mountpoint/data/$key'
     data := '{"$new_key": "$new_value"}'
-    println(url)
 
     mut req := http.Request{
         method: .post,
@@ -571,7 +599,6 @@ pub fn (c Client) read_policy(name string) {
         panic(err)
     }
 
-    println(response.text)
     match response.status() {
         .ok {
             wanted_response = json.decode(Policies_response, response.text)
@@ -614,8 +641,6 @@ pub fn (c Client) token_lookup(tkn string) ?Token_lookup_response {
         panic(err)
     }
 
-    println(response.text)
-
     match response.status() {
         .ok {
             res := json.decode(Token_lookup_response, response.text) or {
@@ -636,15 +661,17 @@ pub fn (c Client) to_string() string {
     return '$c.scheme://$c.host:$c.port'
 }
 
-pub fn (c Client) undelete_secret_v2(mountpoint string, secret string) bool {
+pub fn (c Client) undelete_secret_v2_versions(
+            mountpoint string,
+            secret string,
+            versions []int) bool {
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
         panic('Cannot create request header')
     }
 
     url := c.to_string() + '/v1/$mountpoint/undelete/$secret'
-    data := '{"versions": [2]}'
-    println(url)
+    data := '{"versions": $versions}'
 
     mut req := http.Request{
         method: .post,
@@ -657,7 +684,6 @@ pub fn (c Client) undelete_secret_v2(mountpoint string, secret string) bool {
         panic(err)
     }
 
-    println(response)
     match response.status() {
         .no_content {
             return true
