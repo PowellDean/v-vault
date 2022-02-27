@@ -1,6 +1,7 @@
 module vault
 
 pub struct Secret_v1 {
+    pub:
     request_id string
     lease_id string
     renewable bool
@@ -8,8 +9,14 @@ pub struct Secret_v1 {
     data map[string]string
 }
 
+type Secret_v1_response = Secret_v1 | API_error
+
 pub fn (s Secret_v1) print_data() {
     println(s.data)
+}
+
+pub fn (s Secret_v1) has_data() bool {
+    return s.data.len > 0
 }
 
 pub fn (s Secret_v1) key() string {

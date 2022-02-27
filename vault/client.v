@@ -139,14 +139,13 @@ pub fn (c Client) destroy_secret_v2_versions(
     }
 }
 
-pub fn (c Client) get_encryption_key_status() ?Key_status_or_error {
+pub fn (c Client) get_encryption_key_status() (Key_status, API_error) {
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
         panic('Cannot create request header')
     }
 
     url := c.to_string() + '/v1/sys/key-status'
-    //url := c.to_string() + '/v1/sys/policy'
 
     mut req := http.Request{
         method: .get,
@@ -158,27 +157,27 @@ pub fn (c Client) get_encryption_key_status() ?Key_status_or_error {
         panic(err)
     }
 
+    mut res := Key_status{}
+    mut failure := API_error{errors: []}
     match response.status() {
         .ok {
-            res := json.decode(Key_status_response, response.text) or {
-                //return(error(response.text))
+            res = json.decode(Key_status, response.text) or {
                 panic(err)
             }
-            return res
         }
         else {
-            res := json.decode(Error_response, response.text) or {
+            failure = json.decode(API_error, response.text) or {
                 panic(err)
             }
-            //wanted_response.error_messages = unwanted_response.errors
-            return res
         }
     }
+
+    return res, failure
 }
 
 // get_secret will return the value of the requested secret
-// Returns an Optional
-pub fn (c Client) get_secret_v1(mountpoint string, key string) ?Secret_v1 {
+pub fn (c Client) get_secret_v1(mountpoint string,
+            key string) (Secret_v1, API_error) {
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
         panic('Cannot create request header')
@@ -193,28 +192,39 @@ pub fn (c Client) get_secret_v1(mountpoint string, key string) ?Secret_v1 {
     }
 
     response := req.do() or {
+        match err.msg {
+            'dial_tcp failed' { panic('Vault server not started')}
+            else { panic(err) }
+        }
+
         panic(err)
     }
 
+    mut res := Secret_v1{}
+    mut failure := API_error{errors:[]}
     match response.status() {
         .ok {
-            res := json.decode(Secret_v1, response.text) or {
+            res = json.decode(Secret_v1, response.text) or {
                 panic(err)
             }
-            return res
         }
         .not_found {
-            return(error('Secret $key not found'))
+            //return(error('Secret $key not found'))
+            failure = API_error{errors: ['Secret $key not found']}
         }
         else {
-            return error(response.text)
+            //return error(response.text)
+            failure = API_error{errors: [response.text]}
         }
     }
+
+    return res, failure
 }
+
 pub fn (c Client) get_secret_v2(
             mountpoint string,
             key string,
-            ver int) ?Secret_v2 {
+            ver int) (Secret_v2, API_error) {
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
         panic('Cannot create request header')
@@ -232,35 +242,32 @@ pub fn (c Client) get_secret_v2(
         panic(err)
     }
 
+    mut res := Secret_v2{}
+    mut failure := API_error{errors: []}
     match response.status() {
         .ok {
-            res := json.decode(Secret_v2, response.text) or {
+            res = json.decode(Secret_v2, response.text) or {
                 panic(err)
             }
-            //index := res.data.keys()[0]
-            //return res.data[index]
-            return res
         }
         .not_found {
-            return(error('Secret $key not found'))
+            failure = API_error{errors: ['Secret $key not found']}
         }
         else {
-            return error(response.text)
+            failure = json.decode(API_error, response.text) or {
+                panic(err)
+            }
         }
     }
+
+    return res, failure
 }
 
-pub fn (c Client) get_system_health() ?Health_response {
-    mut header := http.new_header()
-    header.add_custom('X-Vault-Token', c.token) or {
-        panic('Cannot create request header')
-    }
-
+pub fn (c Client) get_system_health() (System_health, API_error) {
     mut url := c.to_string() + '/v1/sys/health'
 
     mut req := http.Request{
         method: .get,
-        header: header,
         url: url
     }
 
@@ -268,32 +275,33 @@ pub fn (c Client) get_system_health() ?Health_response {
         panic(err)
     }
 
+    mut res := System_health{}
+    mut failure := API_error{errors:[]}
     match response.status() {
         .ok {
-            res := json.decode(Health_response, response.text) or {
+            res = json.decode(System_health, response.text) or {
                 panic(err)
             }
-            return res
         }
         .service_unavailable {
-            res := json.decode(Health_response, response.text) or {
+            res = json.decode(System_health, response.text) or {
                 panic(err)
             }
-            return res
         }
         .not_implemented {
-            res := json.decode(Health_response, response.text) or {
+            res = json.decode(System_health, response.text) or {
                 panic(err)
             }
-            return res
         }
         else {
-            return error(response.text)
+            failure = API_error{errors: [response.text]}
         }
     }
+
+    return res, failure
 }
 
-pub fn (c Client) list_secrets(mountpoint string) ?Key_list_response {
+pub fn (c Client) list_secrets(mountpoint string) (Key_list, API_error) {
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
         panic('Cannot create request header')
@@ -318,22 +326,29 @@ pub fn (c Client) list_secrets(mountpoint string) ?Key_list_response {
         panic(err)
     }
 
+    mut res := Key_list{}
+    mut failure := API_error{errors: []}
+
     match response.status() {
         .ok {
-            res := json.decode(Key_list_response, response.text) or {
+            res = json.decode(Key_list, response.text) or {
                 panic(err)
             }
-            return res
+        }
+        .not_found {
+            failure = API_error{errors: ['No value found at $mountpoint']}
         }
         else {
-            return error(response.text)
+            failure = json.decode(API_error, response.text) or {
+                panic(err)
+            }
         }
     }
+
+    return res, failure
 }
 
-pub fn (c Client) list_policies() ?Policies_response {
-    mut wanted_response := Policies_response{}
-
+pub fn (c Client) list_policies() (Policies, API_error) {
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
         panic('Cannot create request header')
@@ -351,21 +366,21 @@ pub fn (c Client) list_policies() ?Policies_response {
         panic(err)
     }
 
+    mut res := Policies{}
+    mut failure := API_error{errors: []}
     match response.status() {
         .ok {
-            wanted_response = json.decode(Policies_response, response.text)
-            or {
+            res = json.decode(Policies, response.text) or {
                 panic(err)
             }
         }
         else {
-            unwanted_response := json.decode(Error_response, response.text) or {
+            failure = json.decode(API_error, response.text) or {
                 panic('Cannot decode error response')
             }
-            wanted_response.error_messages = unwanted_response.errors
         }
     }
-    return wanted_response
+    return res, failure
 }
 
 // new_client is the control function for creating a new connection to a Vault
@@ -580,7 +595,7 @@ pub fn (c Client) put_secret_v2(
 }
 
 pub fn (c Client) read_policy(name string) {
-    mut wanted_response := Policies_response{}
+    mut wanted_response := Policies{}
 
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
@@ -601,16 +616,16 @@ pub fn (c Client) read_policy(name string) {
 
     match response.status() {
         .ok {
-            wanted_response = json.decode(Policies_response, response.text)
+            wanted_response = json.decode(Policies, response.text)
             or {
                 panic(err)
             }
         }
         else {
-            unwanted_response := json.decode(Error_response, response.text) or {
+            unwanted_response := json.decode(API_error, response.text) or {
                 panic('Cannot decode error response')
             }
-            wanted_response.error_messages = unwanted_response.errors
+            //wanted_response.error_messages = unwanted_response.errors
         }
     }
     //return wanted_response
@@ -698,7 +713,7 @@ pub fn (c Client) unseal(token string) ?Status_response {
     url := c.to_string() + '/v1/sys/unseal'
 	body := '{"key": "$token"}'
     mut wanted_response := Status_response{}
-    mut unwanted_response := Error_response{errors: []}
+    mut unwanted_response := API_error{errors: []}
 
     response := http.post(url, body) or {
         return(err)
@@ -711,7 +726,7 @@ pub fn (c Client) unseal(token string) ?Status_response {
             }
         }
         else {
-            unwanted_response = json.decode(Error_response, response.text) or {
+            unwanted_response = json.decode(API_error, response.text) or {
                 return(error(response.text))
             }
             wanted_response.error_messages = unwanted_response.errors

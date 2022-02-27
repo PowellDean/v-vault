@@ -1,10 +1,11 @@
 module vault
 
-struct Error_response {
-	pub: errors []string [required]
+pub struct API_error {
+    pub mut:
+	errors []string
 }
 
-struct Health_response {
+struct System_health {
     initialized bool
     sealed bool
     standby bool
@@ -21,20 +22,18 @@ struct Init_response {
     initialized bool [required]
 }
 
-struct Key_list {
+struct Key_list_data {
     keys []string
 }
 
-pub struct Key_list_response {
+pub struct Key_list {
     request_id string
     lease_id   string
     renewable  bool
-    data       Key_list
+    data       Key_list_data
 }
 
-type Key_list_or_error = Key_list_response | Error_response
-
-struct Key_status_response {
+struct Key_status {
     pub:
     term int
     install_time string
@@ -43,19 +42,15 @@ struct Key_status_response {
     renewable bool
 }
 
-type Key_status_or_error = Key_status_response | Error_response
-
 struct Mountpoints {
     mountpoint map[string]string
 }
 
-struct Policies_response {
+struct Policies {
     policies []string
     keys []string
     lease_id string
     renewable bool
-    pub mut:
-    error_messages []string [skip]
 }
 
 struct Status_response {
@@ -110,4 +105,8 @@ struct User_login_response {
     renewable bool
     lease_duration int
     auth User_auth
+}
+
+pub fn (e API_error) is_clear() bool {
+    return e.errors.len == 0
 }

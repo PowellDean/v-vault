@@ -24,6 +24,10 @@ pub fn (s Secret_v2) print_data() {
     println(s.data)
 }
 
+pub fn (s Secret_v2) has_data() bool {
+    return s.data.data.len > 0
+}
+
 pub fn (s Secret_v2) key() string {
     return s.data.data.keys()[0]
 }

@@ -39,23 +39,69 @@ fn main() {
     //ans = x.unseal('fhfmZKz4FvPNFdgP/jgBUMz6YOAuutfcVEJnfXed2vPJ')?
     //println(ans)
     */
-    t1() or { println(err) }
+    //t1() or { println(err) }
+    x := vault.new_client('', vault.Authtype.token, 's.ZKt6wVjUFJWnEbjFaBwaNuIi')
+    //secret_v1(x)
+    //secret_v2(x)
+    //system_health(x)
+    //list_secrets_v1(x, 'secret')
+    list_policies(x)
+}
+
+fn list_secrets_v1(x vault.Client, mountpoint string) {
+    list, my_err := x.list_secrets(mountpoint)
+    if my_err.is_clear() {
+        println('Success! $list')
+    } else {
+        println('Failure! $my_err')
+    }
+}
+
+fn list_policies(x vault.Client) {
+    list, my_err := x.list_policies()
+    if my_err.is_clear() {
+        println('Success! $list')
+    } else {
+        println('Failure! $my_err')
+    }
+}
+
+fn secret_v1(x vault.Client) {
+    s1, my_err := x.get_secret_v1('cubbyhole', 'foo')
+    if my_err.errors.len == 0 {
+        println(s1.key())
+        println(s1.value())
+    } else {
+        println(my_err)
+    }
+}
+
+fn secret_v2(x vault.Client) {
+    s2, my_err := x.get_secret_v2('secret', 'bar', 0)
+    if my_err.is_clear() {
+        println(s2.key())
+        println(s2.value())
+    } else {
+        println(my_err)
+    }
+}
+
+fn system_health(x vault.Client) {
+    health, my_err := x.get_system_health()
+
+    if my_err.is_clear() {
+        println('Success! $health')
+    } else {
+        println('Failure: $my_err')
+    }
 }
 
 fn t1() ?{
-    x := vault.new_client('', vault.Authtype.token, 's.TGw3d9HJLiouaXAgZJUW6xQl')
+    //x := vault.new_client('', vault.Authtype.token, 's.TGw3d9HJLiouaXAgZJUW6xQl')
     //x := vault.new_client('', vault.Authtype.username, 'dpowell', 'dpowell')
     //println(x)
     //println(x.is_initialized())
-    //println(x.get_secret_v1('cubbyhole', 'foo')?)
-    //y := x.get_secret_v1('cubbyhole', 'foo') or {
-    //    println(err)
-    //    vault.Secret_v1{}
-    //}
-    //println(y)
     //y.print_data()
-    //println(y.key())
-    //println(y.value())
     //z := x.get_secret_v2('secret', 'foo', 0) or {
     //    println(err)
     //    vault.Secret_v2{}
@@ -63,15 +109,9 @@ fn t1() ?{
     //println(z)
     //println(z.value())
     //println(x.is_sealed())
-    //j := x.list_secrets('cubbyhole') or {
-        //println(err)
-        //vault.Key_list_response{}
-    //}
-    //println(j)
 
     //x.put_secret_v2('secret', 'blah', 'newkey', 'newvalue')
     //x.read_policy('default')
-    //x.get_system_health() or { panic(err) }
     //g := x.token_lookup(x.token())?
     //println(g)
     //x.list_secrets('cubbyhole')?
@@ -81,5 +121,5 @@ fn t1() ?{
     //if x.delete_secret_v2_versions('secret', 'foo', [4, 5]) { println('ok') }
     //if x.undelete_secret_v2_versions('secret', 'foo', [2, 4, 5]) { println('ok') }
     //if x.undelete_secret_v2('secret', 'baz') { println('ok') }
-    if x.destroy_secret_v2_versions('secret', 'foo', [2]) { println('ok') }
+    //if x.destroy_secret_v2_versions('secret', 'foo', [2]) { println('ok') }
 }
