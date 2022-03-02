@@ -40,12 +40,13 @@ fn main() {
     //println(ans)
     */
     //t1() or { println(err) }
-    x := vault.new_client('', vault.Authtype.token, 's.ZKt6wVjUFJWnEbjFaBwaNuIi')
+    x := vault.new_client('', vault.Authtype.token, 's.Qwo9aw0LVK9KFToRi1TMC2Hg')
     //secret_v1(x)
     //secret_v2(x)
     //system_health(x)
     //list_secrets_v1(x, 'secret')
     list_policies(x)
+    println(x.delete_secret_v2('cubbyhole', 'foo'))
 }
 
 fn list_secrets_v1(x vault.Client, mountpoint string) {

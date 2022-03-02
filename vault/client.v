@@ -15,7 +15,7 @@ pub:
     token   string
 }
 
-pub fn (c Client) delete_secret_v1(mountpoint string, secret string) bool {
+pub fn (c Client) delete_secret_v1(mountpoint string, secret string) API_error {
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
         panic('Cannot create request header')
@@ -30,22 +30,31 @@ pub fn (c Client) delete_secret_v1(mountpoint string, secret string) bool {
     }
 
     response := req.do() or {
-        panic(err)
+        match err.msg {
+            'dial_tcp failed' {
+                return API_error{errors: ['Vault server not started']}
+            }
+            else { return API_error{errors: [err.msg]} }
+        }
+        return API_error{}
     }
 
     match response.status() {
         .no_content {
-            return true
+            return API_error{errors: []}
+        }
+        .forbidden {
+            return API_error{errors: ['Not authorized']}
         }
         else {
-            return false
+            return API_error{errors: ['Unknown error in delete_secret_v1']}
         }
     }
 }
 
 pub fn (c Client) delete_secret_v2(
             mountpoint string,
-            secret string) bool {
+            secret string) API_error {
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
         panic('Cannot create request header')
@@ -60,15 +69,24 @@ pub fn (c Client) delete_secret_v2(
     }
 
     response := req.do() or {
-        panic(err)
+        match err.msg {
+            'dial_tcp failed' {
+                return API_error{errors: ['Vault server not started']}
+            }
+            else { return API_error{errors: [err.msg]} }
+        }
+        return API_error{}
     }
 
     match response.status() {
         .no_content {
-            return true
+            return API_error{errors: []}
+        }
+        .forbidden {
+            return API_error{errors: ['Not authorized']}
         }
         else {
-            return false
+            return API_error{errors: ['Unknown error in delete_secret_v1']}
         }
     }
 }
@@ -153,12 +171,19 @@ pub fn (c Client) get_encryption_key_status() (Key_status, API_error) {
         url: url
     }
 
-    response := req.do() or {
-        panic(err)
-    }
-
     mut res := Key_status{}
     mut failure := API_error{errors: []}
+
+    response := req.do() or {
+        match err.msg {
+            'dial_tcp failed' {
+                failure = API_error{errors: ['Vault server not started']}
+            }
+            else { failure = API_error{errors: [err.msg]} }
+        }
+        return res, failure
+    }
+
     match response.status() {
         .ok {
             res = json.decode(Key_status, response.text) or {
@@ -191,17 +216,19 @@ pub fn (c Client) get_secret_v1(mountpoint string,
         url: url
     }
 
-    response := req.do() or {
-        match err.msg {
-            'dial_tcp failed' { panic('Vault server not started')}
-            else { panic(err) }
-        }
-
-        panic(err)
-    }
-
     mut res := Secret_v1{}
     mut failure := API_error{errors:[]}
+
+    response := req.do() or {
+        match err.msg {
+            'dial_tcp failed' {
+                failure = API_error{errors: ['Vault server not started']}
+            }
+            else { failure = API_error{errors: [err.msg]} }
+        }
+        return res, failure
+    }
+
     match response.status() {
         .ok {
             res = json.decode(Secret_v1, response.text) or {
@@ -362,12 +389,20 @@ pub fn (c Client) list_policies() (Policies, API_error) {
         url: url
     }
 
-    response := req.do() or {
-        panic(err)
-    }
-
     mut res := Policies{}
     mut failure := API_error{errors: []}
+
+    response := req.do() or {
+        //panic(err)
+        match err.msg {
+            'dial_tcp failed' {
+                failure = API_error{errors: ['Vault server not started']}
+            }
+            else { failure = API_error{errors: [err.msg]} }
+        }
+        return res, failure
+    }
+
     match response.status() {
         .ok {
             res = json.decode(Policies, response.text) or {
@@ -611,7 +646,14 @@ pub fn (c Client) read_policy(name string) {
     }
 
     response := req.do() or {
-        panic(err)
+        match err.msg {
+            'dial_tcp failed' {
+                failure := API_error{errors: ['Vault server not started']}
+            }
+            else { failure := API_error{errors: [err.msg]} }
+        }
+        println(err.msg)
+        return
     }
 
     match response.status() {
