@@ -127,7 +127,7 @@ pub fn (c Client) delete_secret_v2_versions(
 pub fn (c Client) destroy_secret_v2_versions(
             mountpoint string,
             secret string,
-            versions []int) bool {
+            versions []int) API_error {
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
         panic('Cannot create request header')
@@ -144,15 +144,27 @@ pub fn (c Client) destroy_secret_v2_versions(
     }
 
     response := req.do() or {
-        panic(err)
+        match err.msg {
+            'dial_tcp failed' {
+                return API_error{errors: ['Vault server not started']}
+            }
+            else { return API_error{errors: [err.msg]} }
+        }
+        return API_error{}
     }
 
     match response.status() {
         .no_content {
-            return true
+            return API_error{errors: []}
+        }
+        .forbidden {
+            return API_error{errors: ['Not authorized']}
+        }
+        .not_found {
+            return API_error{errors: ['$mountpoint not found']}
         }
         else {
-            return false
+            return API_error{errors: ['Unknown error in destroy_secret_v2_versions']}
         }
     }
 }
@@ -167,7 +179,6 @@ pub fn (c Client) get_encryption_key_status() (Key_status, API_error) {
 
     mut req := http.Request{
         method: .get,
-        //header: header,
         url: url
     }
 
@@ -363,7 +374,7 @@ pub fn (c Client) list_secrets(mountpoint string) (Key_list, API_error) {
             }
         }
         .not_found {
-            failure = API_error{errors: ['No value found at $mountpoint']}
+            failure = API_error{errors: ['Mountpoint $mountpoint not found']}
         }
         else {
             failure = json.decode(API_error, response.text) or {
@@ -375,7 +386,7 @@ pub fn (c Client) list_secrets(mountpoint string) (Key_list, API_error) {
     return res, failure
 }
 
-pub fn (c Client) list_policies() (Policies, API_error) {
+pub fn (c Client) list_policies() (Policy_list, API_error) {
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
         panic('Cannot create request header')
@@ -389,7 +400,7 @@ pub fn (c Client) list_policies() (Policies, API_error) {
         url: url
     }
 
-    mut res := Policies{}
+    mut res := Policy_list{}
     mut failure := API_error{errors: []}
 
     response := req.do() or {
@@ -405,7 +416,7 @@ pub fn (c Client) list_policies() (Policies, API_error) {
 
     match response.status() {
         .ok {
-            res = json.decode(Policies, response.text) or {
+            res = json.decode(Policy_list, response.text) or {
                 panic(err)
             }
         }
@@ -557,7 +568,7 @@ pub fn (c Client) put_secret_v1(
             mountpoint string,
             key string,
             new_key string,
-            new_value string) {
+            new_value string) API_error {
 
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
@@ -575,18 +586,27 @@ pub fn (c Client) put_secret_v1(
     }
 
     response := req.do() or {
-        panic(err)
+        match err.msg {
+            'dial_tcp failed' {
+                return API_error{errors: ['Vault server not started']}
+            }
+            else { return API_error{errors: [err.msg]} }
+        }
+        return API_error{}
     }
 
     match response.status() {
         .no_content {
-            println('Put operation successful')
+            return API_error{errors: []}
+        }
+        .forbidden {
+            return API_error{errors: ['Not authorized']}
         }
         .bad_request {
-            println('Bad Request!')
+            return API_error{errors: ['Bad request']}
         }
         else {
-            println(response.status())
+            return API_error{errors: ['Unknown error in put_secret_v1']}
         }
     }
 }
@@ -595,7 +615,7 @@ pub fn (c Client) put_secret_v2(
             mountpoint string,
             key string,
             new_key string,
-            new_value string) {
+            new_value string) API_error {
 
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
@@ -603,7 +623,11 @@ pub fn (c Client) put_secret_v2(
     }
 
     url := c.to_string() + '/v1/$mountpoint/data/$key'
-    data := '{"$new_key": "$new_value"}'
+    data := '{
+        "data": {
+            "$new_key": "$new_value"
+        }
+    }'
 
     mut req := http.Request{
         method: .post,
@@ -613,24 +637,39 @@ pub fn (c Client) put_secret_v2(
     }
 
     response := req.do() or {
-        panic(err)
+        match err.msg {
+            'dial_tcp failed' {
+                return API_error{errors: ['Vault server not started']}
+            }
+            else { return API_error{errors: [err.msg]} }
+        }
+        return API_error{}
     }
 
     match response.status() {
+        .ok {
+            return API_error{errors: []}
+        }
         .no_content {
-            println('Put operation successful')
+            return API_error{errors: []}
+        }
+        .forbidden {
+            return API_error{errors: ['Not authorized']}
         }
         .bad_request {
-            println('Bad Request!')
+            return API_error{errors: ['Bad request']}
         }
         else {
-            println(response.status())
+            return API_error{errors: ['Unknown error in put_secret_v2']}
         }
     }
 }
 
+// read_policy returns the defined rules and capabilities assigned
+// to a given policy name.
+// * name: The name of the policy
 pub fn (c Client) read_policy(name string) {
-    mut wanted_response := Policies{}
+    mut wanted_response := Policy{}
 
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
@@ -649,28 +688,31 @@ pub fn (c Client) read_policy(name string) {
         match err.msg {
             'dial_tcp failed' {
                 failure := API_error{errors: ['Vault server not started']}
+                println(failure)
             }
-            else { failure := API_error{errors: [err.msg]} }
+            else {
+                failure := API_error{errors: [err.msg]}
+                println(failure)
+            }
         }
-        println(err.msg)
         return
     }
 
+    println(response.text)
     match response.status() {
         .ok {
-            wanted_response = json.decode(Policies, response.text)
-            or {
+            wanted_response = json.decode(Policy, response.text) or {
                 panic(err)
             }
+            println(wanted_response)
         }
         else {
             unwanted_response := json.decode(API_error, response.text) or {
                 panic('Cannot decode error response')
             }
-            //wanted_response.error_messages = unwanted_response.errors
+            println(unwanted_response)
         }
     }
-    //return wanted_response
 }
 
 pub fn (c Client) token() string {

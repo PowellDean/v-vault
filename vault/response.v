@@ -46,7 +46,12 @@ struct Mountpoints {
     mountpoint map[string]string
 }
 
-struct Policies {
+struct Policy {
+    name     string
+    rules    string
+}
+
+struct Policy_list {
     policies []string
     keys []string
     lease_id string
