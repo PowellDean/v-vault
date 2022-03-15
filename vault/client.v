@@ -94,7 +94,7 @@ pub fn (c Client) delete_secret_v2(
 pub fn (c Client) delete_secret_v2_versions(
             mountpoint string,
             secret string,
-            versions []int) bool {
+            versions []int) API_error {
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', c.token) or {
         panic('Cannot create request header')
@@ -111,15 +111,15 @@ pub fn (c Client) delete_secret_v2_versions(
     }
 
     response := req.do() or {
-        panic(err)
+        return API_error{errors: [err.msg]}
     }
 
     match response.status() {
         .no_content {
-            return true
+            return API_error{errors:[]}
         }
         else {
-            return false
+            return API_error{errors: ['Unknown error occurred delete_secret_v2_versions']}
         }
     }
 }
@@ -198,12 +198,14 @@ pub fn (c Client) get_encryption_key_status() (Key_status, API_error) {
     match response.status() {
         .ok {
             res = json.decode(Key_status, response.text) or {
-                panic(err)
+                failure = API_error{errors: [err.msg]}
+                return res, failure
             }
         }
         else {
             failure = json.decode(API_error, response.text) or {
-                panic(err)
+                failure = API_error{errors: [err.msg]}
+                return res, failure
             }
         }
     }
@@ -243,15 +245,14 @@ pub fn (c Client) get_secret_v1(mountpoint string,
     match response.status() {
         .ok {
             res = json.decode(Secret_v1, response.text) or {
-                panic(err)
+                failure = API_error{errors: [err.msg]}
+                return res, failure
             }
         }
         .not_found {
-            //return(error('Secret $key not found'))
             failure = API_error{errors: ['Secret $key not found']}
         }
         else {
-            //return error(response.text)
             failure = API_error{errors: [response.text]}
         }
     }
@@ -276,24 +277,34 @@ pub fn (c Client) get_secret_v2(
         url: url
     }
 
-    response := req.do() or {
-        panic(err)
-    }
-
     mut res := Secret_v2{}
     mut failure := API_error{errors: []}
+
+    response := req.do() or {
+        match err.msg {
+            'dial_tcp failed' {
+                failure = API_error{errors: ['Vault server not started']}
+            }
+            else { failure = API_error{errors: [err.msg]} }
+        }
+        return res, failure
+    }
+
     match response.status() {
         .ok {
             res = json.decode(Secret_v2, response.text) or {
-                panic(err)
+                failure = API_error{errors: [err.msg]}
+                return res, failure
             }
         }
         .not_found {
             failure = API_error{errors: ['Secret $key not found']}
+            return res, failure
         }
         else {
             failure = json.decode(API_error, response.text) or {
-                panic(err)
+                failure = API_error{errors: [err.msg]}
+                return res, failure
             }
         }
     }
@@ -309,26 +320,31 @@ pub fn (c Client) get_system_health() (System_health, API_error) {
         url: url
     }
 
-    response := req.do() or {
-        panic(err)
-    }
-
     mut res := System_health{}
     mut failure := API_error{errors:[]}
+
+    response := req.do() or {
+        failure = API_error{errors: [err.msg]}
+        return res, failure
+    }
+
     match response.status() {
         .ok {
             res = json.decode(System_health, response.text) or {
-                panic(err)
+                failure = API_error{errors: [err.msg]}
+                return res, failure
             }
         }
         .service_unavailable {
             res = json.decode(System_health, response.text) or {
-                panic(err)
+                failure = API_error{errors: [err.msg]}
+                return res, failure
             }
         }
         .not_implemented {
             res = json.decode(System_health, response.text) or {
-                panic(err)
+                failure = API_error{errors: [err.msg]}
+                return res, failure
             }
         }
         else {
@@ -353,36 +369,38 @@ pub fn (c Client) list_secrets(mountpoint string) (Key_list, API_error) {
         url: url
     }
 
+    mut res := Key_list{}
+    mut failure := API_error{errors: []}
+
     response := req.do() or {
         match err.msg {
             'dial_tcp failed' {
-                panic('Vault Server Not Started')
+                failure = API_error{errors: ['Vault server not started']}
             } else {
-                panic(err)
+                failure = API_error{errors: [err.msg]}
             }
         }
-        panic(err)
+        return res, failure
     }
-
-    mut res := Key_list{}
-    mut failure := API_error{errors: []}
 
     match response.status() {
         .ok {
             res = json.decode(Key_list, response.text) or {
-                panic(err)
+                failure = API_error{errors:[err.msg]}
+                return res, failure
             }
         }
         .not_found {
             failure = API_error{errors: ['Mountpoint $mountpoint not found']}
+            return res, failure
         }
         else {
             failure = json.decode(API_error, response.text) or {
-                panic(err)
+                failure = API_error{errors:[err.msg]}
+                return res, failure
             }
         }
     }
-
     return res, failure
 }
 
@@ -404,7 +422,6 @@ pub fn (c Client) list_policies() (Policy_list, API_error) {
     mut failure := API_error{errors: []}
 
     response := req.do() or {
-        //panic(err)
         match err.msg {
             'dial_tcp failed' {
                 failure = API_error{errors: ['Vault server not started']}
@@ -417,12 +434,14 @@ pub fn (c Client) list_policies() (Policy_list, API_error) {
     match response.status() {
         .ok {
             res = json.decode(Policy_list, response.text) or {
-                panic(err)
+                failure = API_error{errors:[err.msg]}
+                return res, failure
             }
         }
         else {
             failure = json.decode(API_error, response.text) or {
-                panic('Cannot decode error response')
+                failure = API_error{errors:[err.msg]}
+                return res, failure
             }
         }
     }
@@ -553,7 +572,7 @@ pub fn (c Client) is_sealed() bool {
 
     match response.status() {
         .ok {
-            status := json.decode(Status_response, response.text) or {
+            status := json.decode(Status, response.text) or {
                 panic(err)
             }
             return status.sealed
@@ -698,7 +717,6 @@ pub fn (c Client) read_policy(name string) {
         return
     }
 
-    println(response.text)
     match response.status() {
         .ok {
             wanted_response = json.decode(Policy, response.text) or {
@@ -719,7 +737,7 @@ pub fn (c Client) token() string {
     return c.token
 }
 
-pub fn (c Client) token_lookup(tkn string) ?Token_lookup_response {
+pub fn (c Client) token_lookup(tkn string) (Token_data, API_error) {
     mut header := http.new_header()
     header.add_custom('X-Vault-Token', tkn) or {
         panic('Cannot create request header')
@@ -736,24 +754,37 @@ pub fn (c Client) token_lookup(tkn string) ?Token_lookup_response {
         url: url
     }
 
+    mut res := Token_data{}
+    mut failure := API_error{errors: []}
+
     response := req.do() or {
-        panic(err)
+        match err.msg {
+            'dial_tcp failed' {
+                failure = API_error{errors: ['Vault server not started']}
+            } else {
+                failure = API_error{errors: [err.msg]}
+            }
+        }
+        return res, failure
     }
 
     match response.status() {
         .ok {
-            res := json.decode(Token_lookup_response, response.text) or {
-                panic(err)
+            res = json.decode(Token_data, response.text) or {
+                failure = API_error{errors: [err.msg]}
+                return res, failure
             }
-            return res
         }
         .not_found {
-            return(error('Nope'))
+            failure = API_error{errors: ['Token $tkn not found']}
+            return res, failure
         }
         else {
-            return error(response.text)
+            failure = API_error{errors: [response.text]}
+            return res, failure
         }
     }
+    return res, failure
 }
 
 pub fn (c Client) to_string() string {
@@ -793,32 +824,35 @@ pub fn (c Client) undelete_secret_v2_versions(
     }
 }
 
-pub fn (c Client) unseal(token string) ?Status_response {
+pub fn (c Client) unseal(token string) (Status, API_error) {
     url := c.to_string() + '/v1/sys/unseal'
 	body := '{"key": "$token"}'
-    mut wanted_response := Status_response{}
-    mut unwanted_response := API_error{errors: []}
+
+    mut res := Status{}
+    mut failure := API_error{errors: []}
 
     response := http.post(url, body) or {
-        return(err)
+        failure = API_error{errors:[err.msg]}
+        return res, failure
     }
 
     match response.status() {
         .ok {
-            wanted_response = json.decode(Status_response, response.text) or {
-                return(error(response.text))
+            res = json.decode(Status, response.text) or {
+                failure = API_error{errors:[err.msg]}
+                return res, failure
             }
         }
         else {
-            unwanted_response = json.decode(API_error, response.text) or {
-                return(error(response.text))
+            failure = json.decode(API_error, response.text) or {
+                failure = API_error{errors:[err.msg]}
+                return res, failure
             }
-            wanted_response.error_messages = unwanted_response.errors
         }
     }
-    return wanted_response
+    return res, failure
 }
 
-pub fn (s Status_response) unseal_progress() int {
+pub fn (s Status) unseal_progress() int {
     return s.progress
 }

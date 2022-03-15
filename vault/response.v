@@ -58,7 +58,7 @@ struct Policy_list {
     renewable bool
 }
 
-struct Status_response {
+struct Status {
 	@type string
 	initialized string
 	sealed bool
@@ -72,8 +72,6 @@ struct Status_response {
 	cluster_id string
 	recovery_seal bool
 	storage_type string
-    pub mut:
-    error_messages []string [skip]
 }
 
 struct Token_lookup_data {
@@ -92,7 +90,7 @@ struct Token_lookup_data {
     @type string
 }
 
-struct Token_lookup_response {
+struct Token_data {
     request_id string
     lease_id string
     renewable bool

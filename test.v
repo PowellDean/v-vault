@@ -40,16 +40,17 @@ fn main() {
     //println(ans)
     */
     //t1() or { println(err) }
-    x := vault.new_client('', vault.Authtype.token, 's.I6Xm3PzIYPnlRF2WeuO9IXw8')
+    x := vault.new_client('', vault.Authtype.token, 's.GIXfyr6ifNEyiuSFenr8x549')
     //secret_v1(x)
     //secret_v2(x)
-    //system_health(x)
+    system_health(x)
     //list_secrets_v1(x, 'secret')
     //list_policies(x)
     //destroy_v2_secret(x)
     //x.read_policy('default')
     //new_v1_secret(x)
-    new_v2_secret(x)
+    //new_v2_secret(x)
+    //lookup_token(x, 's.GIXfyr6ifNEyiuSFenr8x549')
 }
 
 fn destroy_v2_secret(x vault.Client) {
@@ -79,6 +80,15 @@ fn list_policies(x vault.Client) {
     }
 }
 
+fn lookup_token(x vault.Client, tkn string) {
+    list, my_err := x.token_lookup(tkn)
+    if my_err.is_clear() {
+        println('Success! $list')
+    } else {
+        println('Failure! $my_err')
+    }
+}
+
 fn new_v1_secret(x vault.Client) {
     my_err := x.put_secret_v1('cubbyhole', 'blah', 'newkey', 'newvalue')
     if my_err.is_clear() {
@@ -100,6 +110,7 @@ fn new_v2_secret(x vault.Client) {
 fn secret_v1(x vault.Client) {
     s1, my_err := x.get_secret_v1('cubbyhole', 'foo')
     if my_err.errors.len == 0 {
+        println(s1)
         println(s1.key())
         println(s1.value())
     } else {
@@ -110,6 +121,7 @@ fn secret_v1(x vault.Client) {
 fn secret_v2(x vault.Client) {
     s2, my_err := x.get_secret_v2('secret', 'bar', 0)
     if my_err.is_clear() {
+        println(s2)
         println(s2.key())
         println(s2.value())
     } else {
