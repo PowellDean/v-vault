@@ -41,7 +41,7 @@ fn main() {
     //println(ans)
 	*/
 	// t1() or { println(err) }
-	x := new_client('', Authtype.token, 's.GIXfyr6ifNEyiuSFenr8x549')
+	x := vault.new_client('', vault.Authtype.token, 's.Kt2M3kW66VCNFpofRF9xhf9T')
 	// secret_v1(x)
 	// secret_v2(x)
 	system_health(x)
@@ -54,7 +54,7 @@ fn main() {
 	// lookup_token(x, 's.GIXfyr6ifNEyiuSFenr8x549')
 }
 
-fn destroy_v2_secret(x .Client) {
+fn destroy_v2_secret(x vault.Client) {
 	my_err := x.destroy_secret_v2_versions('cubbyhole', 'foo', [1, 2])
 	if my_err.is_clear() {
 		println('Success!')
@@ -63,7 +63,7 @@ fn destroy_v2_secret(x .Client) {
 	}
 }
 
-fn list_secrets_v1(x .Client, mountpoint string) {
+fn list_secrets_v1(x vault.Client, mountpoint string) {
 	list, my_err := x.list_secrets(mountpoint)
 	if my_err.is_clear() {
 		println('Success! $list')
@@ -72,7 +72,7 @@ fn list_secrets_v1(x .Client, mountpoint string) {
 	}
 }
 
-fn list_policies(x .Client) {
+fn list_policies(x vault.Client) {
 	list, my_err := x.list_policies()
 	if my_err.is_clear() {
 		println('Success! $list')
@@ -81,7 +81,7 @@ fn list_policies(x .Client) {
 	}
 }
 
-fn lookup_token(x .Client, tkn string) {
+fn lookup_token(x vault.Client, tkn string) {
 	list, my_err := x.token_lookup(tkn)
 	if my_err.is_clear() {
 		println('Success! $list')
@@ -90,7 +90,7 @@ fn lookup_token(x .Client, tkn string) {
 	}
 }
 
-fn new_v1_secret(x .Client) {
+fn new_v1_secret(x vault.Client) {
 	my_err := x.put_secret_v1('cubbyhole', 'blah', 'newkey', 'newvalue')
 	if my_err.is_clear() {
 		println('Success! $my_err')
@@ -99,7 +99,7 @@ fn new_v1_secret(x .Client) {
 	}
 }
 
-fn new_v2_secret(x .Client) {
+fn new_v2_secret(x vault.Client) {
 	my_err := x.put_secret_v2('secret', 'blurb', 'monkey', 'sey')
 	if my_err.is_clear() {
 		println('Success! $my_err')
@@ -108,7 +108,7 @@ fn new_v2_secret(x .Client) {
 	}
 }
 
-fn secret_v1(x .Client) {
+fn secret_v1(x vault.Client) {
 	s1, my_err := x.get_secret_v1('cubbyhole', 'foo')
 	if my_err.errors.len == 0 {
 		println(s1)
@@ -119,7 +119,7 @@ fn secret_v1(x .Client) {
 	}
 }
 
-fn secret_v2(x .Client) {
+fn secret_v2(x vault.Client) {
 	s2, my_err := x.get_secret_v2('secret', 'bar', 0)
 	if my_err.is_clear() {
 		println(s2)
@@ -130,7 +130,7 @@ fn secret_v2(x .Client) {
 	}
 }
 
-fn system_health(x .Client) {
+fn system_health(x vault.Client) {
 	health, my_err := x.get_system_health()
 
 	if my_err.is_clear() {

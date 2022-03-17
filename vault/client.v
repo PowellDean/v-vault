@@ -587,10 +587,10 @@ fn new_client_via_token(address string, token string) Client {
 	}
 
 	if raw_url == '' {
-		raw_url = .default_url
+		raw_url = default_url
 	}
 
-	url := urllib.parse(raw_url) or { panic('cannot parse $.default_url') }
+	url := urllib.parse(raw_url) or { panic('cannot parse $default_url') }
 
 	match url.scheme {
 		'http' { scheme = url.scheme }
