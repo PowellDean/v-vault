@@ -1,6 +1,6 @@
 module vault
 
 pub enum Authtype {
-    token
-    username
+	token
+	username
 }

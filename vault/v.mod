@@ -1,7 +1,7 @@
 Module {
 	name: 'vault'
-	description: 'V warpper for Vault API'
-	version: '0.1.0'
+	description: 'V wrapper for Vault API'
+	version: '1.0.0'
 	license: 'MIT'
 	dependencies: []
 }
